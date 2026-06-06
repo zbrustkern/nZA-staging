@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, DragEvent } from 'react';
 import { Card, CardBody, CardHeader, Button, Divider, Spinner } from "@nextui-org/react";
 import { evaluateLevel1 } from '../../services/api';
 
@@ -15,7 +15,7 @@ export default function Level1() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ is_correct: boolean; error_type: string | null; concept_failed: string | null } | null>(null);
 
-  const handleDrop = (e: React.DragEvent, category: "Fact" | "Dimension") => {
+  const handleDrop = (e: DragEvent<HTMLDivElement>, category: "Fact" | "Dimension") => {
     e.preventDefault();
     const item = e.dataTransfer.getData("text/plain");
     if (item) {
@@ -23,11 +23,11 @@ export default function Level1() {
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, item: string) => {
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, item: string) => {
     e.dataTransfer.setData("text/plain", item);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
