@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.3] - 2026-06-07
+
+### Fixed
+- **Legacy State Migration**: Added a self-healing mechanism to \`UnitViewer.tsx\` hydration to automatically upgrade user state profiles that completed units prior to the \`v0.9.1\` update, guaranteeing Unit 2 accurately unlocks for early testers.
+- **Mobile UI**: Fixed a responsive CSS bug that hid the Telemetry Dashboard button on smaller browser windows.
+
 ## [0.9.2] - 2026-06-07
 
 ### Fixed

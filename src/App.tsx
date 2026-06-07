@@ -74,7 +74,7 @@ export default function App() {
         </NavbarBrand>
         <NavbarContent justify="end">
           <NavbarItem className="flex items-center gap-4">
-            <Button variant="light" startContent={<BarChart3 size={18} />} onClick={() => setCurrentView('telemetry')} className="font-medium text-slate-600 hidden sm:flex">
+            <Button variant="light" startContent={<BarChart3 size={18} />} onClick={() => setCurrentView('telemetry')} className="font-medium text-slate-600 flex">
               Telemetry
             </Button>
             <span className="text-sm font-medium text-gray-700 hidden sm:block">{user.displayName}</span>

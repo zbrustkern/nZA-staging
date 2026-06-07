@@ -29,14 +29,20 @@ export default function UnitViewer({ unitId, onReturnToDashboard }: UnitViewerPr
     const hydrate = async () => {
       const progress = await getUserProgress();
       if (progress) {
-        if (progress.completedUnitIds) {
-          setCompletedUnitIds(progress.completedUnitIds);
-        }
+        let loadedCompletedIds = progress.completedUnitIds || [];
+        
         if (progress.currentUnitId === unit.id) {
           setCurrentLessonIndex(progress.currentLessonIndex);
           setTotalUnitFailures(progress.totalUnitFailures);
           setCurrentLessonFailures(progress.currentLessonFailures);
+          
+          // HOTFIX: If the user hydrated into an already completed unit, ensure it gets marked!
+          if (progress.currentLessonIndex >= unit.lessons.length && !loadedCompletedIds.includes(unit.id)) {
+            loadedCompletedIds.push(unit.id);
+            syncUserProgress({ ...progress, completedUnitIds: loadedCompletedIds });
+          }
         }
+        setCompletedUnitIds(loadedCompletedIds);
       }
       setIsHydrating(false);
     };
