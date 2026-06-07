@@ -7,7 +7,7 @@ export interface Concept {
 }
 
 export interface Exercise {
-  uiType: "drag_and_drop" | string;
+  uiType: "drag_and_drop" | "multiple_choice" | string;
   passingThreshold: number; // e.g. 1.0 for 100%
   categories: ConceptCategory[];
   concepts: Concept[];
@@ -89,7 +89,7 @@ export const LESSON_2_KEYS: Lesson = {
     </div>
   `,
   exercise: {
-    uiType: "drag_and_drop",
+    uiType: "multiple_choice",
     passingThreshold: 1.0,
     categories: ["Natural Key", "Surrogate Key"],
     concepts: [
@@ -102,15 +102,44 @@ export const LESSON_2_KEYS: Lesson = {
   }
 };
 
+export const LESSON_3_GRAIN: Lesson = {
+  id: "lesson_3_grain",
+  title: "Finding the Grain",
+  description: "Understand what a single row represents in your tables.",
+  lessonHtml: `
+    <div class="prose prose-blue max-w-none mb-6">
+      <h3 class="text-xl font-semibold mb-2">Declaring the Grain</h3>
+      <p class="mb-4">The <strong>grain</strong> of a Fact table defines exactly what a single row represents. It is the most critical design decision in dimensional modeling.</p>
+      <ul class="list-disc pl-5 mb-4 text-left">
+        <li class="mb-2"><strong>Transaction Grain:</strong> One row per individual event (e.g., a single item scanned at a register). Highly detailed but large.</li>
+        <li class="mb-2"><strong>Periodic Snapshot Grain:</strong> One row per time period (e.g., total sales per store per day). Useful for fast trending.</li>
+        <li class="mb-2"><strong>Accumulating Snapshot Grain:</strong> One row per process (e.g., a life cycle of an order from placed to shipped to delivered).</li>
+      </ul>
+    </div>
+  `,
+  exercise: {
+    uiType: "drag_and_drop",
+    passingThreshold: 1.0,
+    categories: ["Transaction", "Periodic Snapshot", "Accumulating Snapshot"],
+    concepts: [
+      { id: "c1", name: "One row per scanned barcode", category: "Transaction" },
+      { id: "c2", name: "Total revenue per month", category: "Periodic Snapshot" },
+      { id: "c3", name: "Order status (Placed -> Shipped)", category: "Accumulating Snapshot" },
+      { id: "c4", name: "Daily account balance", category: "Periodic Snapshot" },
+      { id: "c5", name: "A single ad click", category: "Transaction" }
+    ]
+  }
+};
+
 export const UNIT_1_DIMENSIONAL_BASICS: Unit = {
   id: "unit_1_dimensional_basics",
   title: "Dimensional Basics",
   description: "Learn the core components of a data warehouse.",
-  lessons: [LESSON_1_CORE, LESSON_2_KEYS]
+  lessons: [LESSON_1_CORE, LESSON_2_KEYS, LESSON_3_GRAIN]
 };
 
-export const LESSON_3_STAR_SCHEMA: Lesson = {
-  id: "lesson_3_star_schema",
+export const LESSON_4_STAR_SCHEMA: Lesson = {
+  id: "lesson_4_star_schema",
   title: "The Star Schema",
   description: "Understand how Fact and Dimension tables relate.",
   lessonHtml: `
@@ -138,18 +167,195 @@ export const LESSON_3_STAR_SCHEMA: Lesson = {
   }
 };
 
+export const LESSON_5_SNOWFLAKE: Lesson = {
+  id: "lesson_5_snowflake",
+  title: "The Snowflake Schema",
+  description: "Learn when dimensions are normalized.",
+  lessonHtml: `
+    <div class="prose prose-purple max-w-none mb-6">
+      <h3 class="text-xl font-semibold mb-2">The Snowflake Schema</h3>
+      <p class="mb-4">While Star schemas feature completely flat, denormalized dimensions, a <strong>Snowflake Schema</strong> partially normalizes the dimension tables to save storage space.</p>
+      <ul class="list-disc pl-5 mb-4 text-left">
+        <li class="mb-2">Instead of a single "Product" table, a Snowflake schema might split it into "Product", "Sub-Category", and "Category" tables linked together.</li>
+        <li class="mb-2"><strong>Pros:</strong> Saves disk space and ensures data integrity during updates.</li>
+        <li class="mb-2"><strong>Cons:</strong> Requires complex multi-table JOINs, slowing down analytics queries.</li>
+      </ul>
+    </div>
+  `,
+  exercise: {
+    uiType: "drag_and_drop",
+    passingThreshold: 1.0,
+    categories: ["Star Schema", "Snowflake Schema"],
+    concepts: [
+      { id: "c1", name: "Denormalized Dimensions", category: "Star Schema" },
+      { id: "c2", name: "Normalized Dimensions", category: "Snowflake Schema" },
+      { id: "c3", name: "Fewer JOINs for queries", category: "Star Schema" },
+      { id: "c4", name: "Optimized for minimal storage", category: "Snowflake Schema" },
+      { id: "c5", name: "Complex query paths", category: "Snowflake Schema" }
+    ]
+  }
+};
+
+export const LESSON_6_SCD: Lesson = {
+  id: "lesson_6_scd",
+  title: "Slowly Changing Dimensions",
+  description: "Tracking history vs overwriting data.",
+  lessonHtml: `
+    <div class="prose prose-blue max-w-none mb-6">
+      <h3 class="text-xl font-semibold mb-2">Handling Change over Time</h3>
+      <p class="mb-4">What happens when a customer moves to a new city? How do we update our Dimension tables? We use <strong>Slowly Changing Dimensions (SCD)</strong>.</p>
+      <ul class="list-disc pl-5 mb-4 text-left">
+        <li class="mb-2"><strong>SCD Type 1: Overwrite.</strong> We simply update the existing row. We lose the historical record of where they used to live. Easy, but destroys history.</li>
+        <li class="mb-2"><strong>SCD Type 2: Add New Row.</strong> We keep the old row and mark it as expired (e.g., End_Date = today), and insert a brand new row with the new city. Retains perfect history!</li>
+      </ul>
+    </div>
+  `,
+  exercise: {
+    uiType: "multiple_choice",
+    passingThreshold: 1.0,
+    categories: ["Type 1 (Overwrite)", "Type 2 (History)"],
+    concepts: [
+      { id: "c1", name: "Destroys historical data", category: "Type 1 (Overwrite)" },
+      { id: "c2", name: "Uses Start and End dates", category: "Type 2 (History)" },
+      { id: "c3", name: "Simplest to implement", category: "Type 1 (Overwrite)" },
+      { id: "c4", name: "Creates a new row for changes", category: "Type 2 (History)" },
+      { id: "c5", name: "Keeps the same Surrogate Key forever", category: "Type 1 (Overwrite)" }
+    ]
+  }
+};
+
 export const UNIT_2_ADVANCED_SCHEMAS: Unit = {
   id: "unit_2_advanced_schemas",
   title: "Advanced Schemas",
-  description: "Dive deeper into Star and Snowflake schemas.",
-  lessons: [LESSON_3_STAR_SCHEMA]
+  description: "Dive deeper into architectures and history tracking.",
+  lessons: [LESSON_4_STAR_SCHEMA, LESSON_5_SNOWFLAKE, LESSON_6_SCD]
+};
+
+export const LESSON_7_EXTRACT: Lesson = {
+  id: "lesson_7_extract",
+  title: "Extract: Getting the Data",
+  description: "Batch vs Streaming ingestion.",
+  lessonHtml: `
+    <div class="prose prose-green max-w-none mb-6">
+      <h3 class="text-xl font-semibold mb-2">Phase 1: Extract</h3>
+      <p class="mb-4">The first step of an ETL pipeline is extracting data from source systems (APIs, Postgres DBs, Salesforce). There are two main extraction patterns:</p>
+      <ul class="list-disc pl-5 mb-4 text-left">
+        <li class="mb-2"><strong>Batch Processing:</strong> Pulling large chunks of data on a schedule (e.g., every midnight). Good for massive historical datasets.</li>
+        <li class="mb-2"><strong>Streaming:</strong> Pulling data in real-time as events happen (e.g., Kafka). Essential for fraud detection or live dashboards.</li>
+      </ul>
+    </div>
+  `,
+  exercise: {
+    uiType: "drag_and_drop",
+    passingThreshold: 1.0,
+    categories: ["Batch Processing", "Streaming"],
+    concepts: [
+      { id: "c1", name: "Runs on a nightly schedule", category: "Batch Processing" },
+      { id: "c2", name: "Real-time event processing", category: "Streaming" },
+      { id: "c3", name: "Apache Kafka", category: "Streaming" },
+      { id: "c4", name: "Historical data dumps", category: "Batch Processing" },
+      { id: "c5", name: "Millisecond latency", category: "Streaming" }
+    ]
+  }
+};
+
+export const LESSON_8_TRANSFORM: Lesson = {
+  id: "lesson_8_transform",
+  title: "Transform: Cleaning Up",
+  description: "Making raw data usable.",
+  lessonHtml: `
+    <div class="prose prose-green max-w-none mb-6">
+      <h3 class="text-xl font-semibold mb-2">Phase 2: Transform</h3>
+      <p class="mb-4">Raw data is messy. During the <strong>Transform</strong> phase, we apply business logic to prepare the data for analytics.</p>
+      <ul class="list-disc pl-5 mb-4 text-left">
+        <li class="mb-2"><strong>Cleansing:</strong> Removing nulls, standardizing dates (e.g., converting "Jan 1" to "2024-01-01"), or masking PII.</li>
+        <li class="mb-2"><strong>Aggregating:</strong> Summarizing daily sales into monthly totals to speed up reporting.</li>
+        <li class="mb-2"><strong>Joining:</strong> Combining raw tables to enrich data before loading.</li>
+      </ul>
+    </div>
+  `,
+  exercise: {
+    uiType: "multiple_choice",
+    passingThreshold: 1.0,
+    categories: ["Cleansing", "Aggregating", "Joining"],
+    concepts: [
+      { id: "c1", name: "Removing NULL values", category: "Cleansing" },
+      { id: "c2", name: "Summing daily sales", category: "Aggregating" },
+      { id: "c3", name: "Merging Users and Orders tables", category: "Joining" },
+      { id: "c4", name: "Standardizing phone numbers", category: "Cleansing" },
+      { id: "c5", name: "Calculating average session time", category: "Aggregating" }
+    ]
+  }
+};
+
+export const LESSON_9_LOAD: Lesson = {
+  id: "lesson_9_load",
+  title: "Load: Lakes vs Warehouses",
+  description: "Where does the data land?",
+  lessonHtml: `
+    <div class="prose prose-green max-w-none mb-6">
+      <h3 class="text-xl font-semibold mb-2">Phase 3: Load</h3>
+      <p class="mb-4">Where we load our data dictates how it can be used. Know the difference between Lakes and Warehouses:</p>
+      <ul class="list-disc pl-5 mb-4 text-left">
+        <li class="mb-2"><strong>Data Lake:</strong> A massive storage repository holding raw, unstructured data (JSON, images, logs) in its native format. Cheap, but hard to query directly.</li>
+        <li class="mb-2"><strong>Data Warehouse:</strong> A structured, highly optimized database containing clean, tabular data ready for SQL queries and BI tools.</li>
+      </ul>
+    </div>
+  `,
+  exercise: {
+    uiType: "drag_and_drop",
+    passingThreshold: 1.0,
+    categories: ["Data Lake", "Data Warehouse"],
+    concepts: [
+      { id: "c1", name: "Raw, unstructured files", category: "Data Lake" },
+      { id: "c2", name: "Optimized for SQL BI tools", category: "Data Warehouse" },
+      { id: "c3", name: "Stores images and JSON logs", category: "Data Lake" },
+      { id: "c4", name: "Strict Star Schema tables", category: "Data Warehouse" },
+      { id: "c5", name: "Cheaper, long-term storage", category: "Data Lake" }
+    ]
+  }
+};
+
+export const LESSON_10_ORCHESTRATION: Lesson = {
+  id: "lesson_10_orchestration",
+  title: "Orchestration & DAGs",
+  description: "Tying the pipeline together.",
+  lessonHtml: `
+    <div class="prose prose-green max-w-none mb-6">
+      <h3 class="text-xl font-semibold mb-2">Task Orchestration</h3>
+      <p class="mb-4">ETL pipelines have complex dependencies (e.g., "Don't run Transform until Extract finishes"). We use orchestrators like <strong>Apache Airflow</strong> to manage this using a <strong>DAG</strong>.</p>
+      <ul class="list-disc pl-5 mb-4 text-left">
+        <li class="mb-2"><strong>DAG (Directed Acyclic Graph):</strong> A series of tasks that run in a specific direction without ever looping back on themselves.</li>
+        <li class="mb-2"><strong>Sensors:</strong> Tasks that wait for an external event (like a file landing in S3) before triggering the rest of the DAG.</li>
+      </ul>
+    </div>
+  `,
+  exercise: {
+    uiType: "multiple_choice",
+    passingThreshold: 1.0,
+    categories: ["DAG Characteristic", "Sensor Duty"],
+    concepts: [
+      { id: "c1", name: "Never loops back on itself", category: "DAG Characteristic" },
+      { id: "c2", name: "Waits for a file upload", category: "Sensor Duty" },
+      { id: "c3", name: "Defines order of execution", category: "DAG Characteristic" },
+      { id: "c4", name: "Listens for an API payload", category: "Sensor Duty" },
+      { id: "c5", name: "Directed flow of tasks", category: "DAG Characteristic" }
+    ]
+  }
+};
+
+export const UNIT_3_ETL_PIPELINE: Unit = {
+  id: "unit_3_etl_pipeline",
+  title: "The ETL Pipeline",
+  description: "Master Extract, Transform, and Load.",
+  lessons: [LESSON_7_EXTRACT, LESSON_8_TRANSFORM, LESSON_9_LOAD, LESSON_10_ORCHESTRATION]
 };
 
 export const COURSE_1_MODELING: Course = {
   id: "course_1_modeling",
-  title: "Dimensional Modeling",
+  title: "Dimensional Modeling & Pipelines",
   description: "Master the art of designing data warehouses.",
-  units: [UNIT_1_DIMENSIONAL_BASICS, UNIT_2_ADVANCED_SCHEMAS]
+  units: [UNIT_1_DIMENSIONAL_BASICS, UNIT_2_ADVANCED_SCHEMAS, UNIT_3_ETL_PIPELINE]
 };
 
 export const DATA_ENG_TRACK: Track = {

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-06-07
+
+### Added
+- **v1.0 Curriculum Launch**: Completely rewrote the syllabus to feature a comprehensive, 10-lesson Data Engineering course.
+- **Unit 1 (Fundamentals)**: The Atomic Core, The Key Masters, Finding the Grain.
+- **Unit 2 (Advanced Schemas)**: The Star Schema, The Snowflake Schema, Slowly Changing Dimensions (SCD).
+- **Unit 3 (The ETL Pipeline)**: Extract (Batch vs Streaming), Transform (Cleansing & Aggregation), Load (Lakes vs Warehouses), Orchestration (DAGs & Sensors).
+- **Test Diversity**: The new curriculum is fully equipped with both Drag & Drop and Multiple Choice exercises tailored uniquely for each lesson.
+
 ## [0.10.0] - 2026-06-07
 
 ### Added
