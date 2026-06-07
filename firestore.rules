@@ -10,5 +10,12 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
+    
+    match /telemetry_failures/{document} {
+      // Anyone authenticated can create a telemetry log
+      allow create: if request.auth != null;
+      // Anyone authenticated can read for the dashboard (would restrict to admins in prod)
+      allow read: if request.auth != null;
+    }
   }
 }

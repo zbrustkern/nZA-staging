@@ -1,6 +1,7 @@
-import { useState, DragEvent, useEffect } from 'react';
+import { useState, DragEvent, useEffect, useRef } from 'react';
 import { Card, CardBody, CardHeader, Button, Divider, Spinner, Progress } from "@nextui-org/react";
 import { generateTutoringHint, generateRemedialLevel, generateRemedialUnit } from '../../services/api';
+import { syncUserProgress, getUserProgress, logTelemetryFailure } from '../../services/db';
 import { UNIT_1_DIMENSIONAL_BASICS, Unit, Lesson, ConceptCategory } from '../../config/syllabus';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -12,6 +13,40 @@ export default function UnitViewer() {
   const [totalUnitFailures, setTotalUnitFailures] = useState(0);
   const [currentLessonFailures, setCurrentLessonFailures] = useState(0);
   
+  const [isHydrating, setIsHydrating] = useState(true);
+
+  // Initialize from Firestore
+  useEffect(() => {
+    const hydrate = async () => {
+      const progress = await getUserProgress();
+      if (progress && progress.currentUnitId === unit.id) {
+        // Restore progress if it matches the current unit
+        setCurrentLessonIndex(progress.currentLessonIndex);
+        setTotalUnitFailures(progress.totalUnitFailures);
+        setCurrentLessonFailures(progress.currentLessonFailures);
+      }
+      setIsHydrating(false);
+    };
+    hydrate();
+  }, [unit.id]);
+
+  // Sync to Firestore on state change
+  const initialMount = useRef(true);
+  useEffect(() => {
+    if (isHydrating) return;
+    if (initialMount.current) {
+        initialMount.current = false;
+        return;
+    }
+    
+    syncUserProgress({
+      currentUnitId: unit.id,
+      currentLessonIndex,
+      totalUnitFailures,
+      currentLessonFailures
+    });
+  }, [currentLessonIndex, totalUnitFailures, currentLessonFailures, isHydrating, unit.id]);
+
   const currentLesson: Lesson = unit.lessons[currentLessonIndex];
   const isUnitComplete = currentLessonIndex >= unit.lessons.length;
 
@@ -23,8 +58,11 @@ export default function UnitViewer() {
   useEffect(() => {
     setAnswers({});
     setResult(null);
-    setCurrentLessonFailures(0); // Reset lesson failures on new lesson
   }, [currentLessonIndex, unit.id]);
+
+  if (isHydrating) {
+     return <div className="min-h-[50vh] flex items-center justify-center"><Spinner size="lg" /></div>;
+  }
 
   if (isUnitComplete) {
     return (
@@ -97,6 +135,9 @@ export default function UnitViewer() {
     
     setCurrentLessonFailures(newLessonFailures);
     setTotalUnitFailures(newTotalUnitFailures);
+    
+    // Log telemetry immediately
+    logTelemetryFailure(failedConceptId!, failedConceptName!, unit.id, currentLesson.id);
 
     // THRESHOLD 3: Foundational Disconnect (Unit Level Remediation)
     if (newTotalUnitFailures >= 5) {
@@ -108,6 +149,7 @@ export default function UnitViewer() {
             newUnit.lessons.splice(currentLessonIndex + 1, newUnit.lessons.length - (currentLessonIndex + 1), lesson as any);
             setUnit(newUnit);
             setCurrentLessonIndex(currentLessonIndex + 1);
+            setCurrentLessonFailures(0);
             setTotalUnitFailures(0); // Reset to give them a fresh start on the macro review
         } catch (err) {
             console.error(err);
@@ -127,6 +169,7 @@ export default function UnitViewer() {
             newUnit.lessons.splice(currentLessonIndex + 1, 0, level as any);
             setUnit(newUnit);
             setCurrentLessonIndex(currentLessonIndex + 1);
+            setCurrentLessonFailures(0);
         } catch (err) {
             console.error(err);
             alert("Error generating remedial lesson.");
@@ -160,6 +203,7 @@ export default function UnitViewer() {
       setUnit(newUnit);
       
       setCurrentLessonIndex(currentLessonIndex + 1);
+      setCurrentLessonFailures(0);
     } catch (err) {
       console.error(err);
       alert("Error generating remedial lesson.");
@@ -170,6 +214,7 @@ export default function UnitViewer() {
 
   const handleNextLesson = () => {
     setCurrentLessonIndex(prev => prev + 1);
+    setCurrentLessonFailures(0); // Reset failures on successful progression
   };
 
   const unassigned = currentLesson.exercise ? currentLesson.exercise.concepts.filter(c => !answers[c.id]) : [];

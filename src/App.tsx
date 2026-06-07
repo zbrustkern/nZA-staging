@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react';
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Card, CardBody } from "@nextui-org/react";
 import { User } from 'firebase/auth';
 import { auth, signInWithGoogle, logout } from './services/firebase';
-import { Database, LogOut } from 'lucide-react';
+import { Database, LogOut, BarChart3 } from 'lucide-react';
 import UnitViewer from './components/Sandbox/UnitViewer';
+import TelemetryViewer from './components/Dashboard/TelemetryViewer';
 import { DATA_ENG_TRACK } from './config/syllabus';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'level1'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'level1' | 'telemetry'>('dashboard');
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -51,6 +52,9 @@ export default function App() {
         </NavbarBrand>
         <NavbarContent justify="end">
           <NavbarItem className="flex items-center gap-4">
+            <Button variant="light" startContent={<BarChart3 size={18} />} onClick={() => setCurrentView('telemetry')} className="font-medium text-slate-600 hidden sm:flex">
+              Telemetry
+            </Button>
             <span className="text-sm font-medium text-gray-700 hidden sm:block">{user.displayName}</span>
             <Button isIconOnly color="danger" variant="light" onClick={logout} aria-label="Log out">
               <LogOut size={20} />
@@ -60,7 +64,7 @@ export default function App() {
       </Navbar>
 
       <main className="flex-grow p-6">
-        {currentView === 'dashboard' ? (
+        {currentView === 'dashboard' && (
           <div className="max-w-4xl mx-auto flex flex-col gap-10 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
               <h2 className="text-3xl font-bold mb-2">Your Skill Tree: {DATA_ENG_TRACK.title}</h2>
@@ -103,12 +107,23 @@ export default function App() {
               </div>
             ))}
           </div>
-        ) : (
+        )}
+
+        {currentView === 'level1' && (
           <div className="animate-in fade-in zoom-in-95 duration-300">
             <div className="max-w-4xl mx-auto mb-4">
               <Button variant="light" onClick={() => setCurrentView('dashboard')}>← Back to Dashboard</Button>
             </div>
             <UnitViewer />
+          </div>
+        )}
+
+        {currentView === 'telemetry' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="max-w-4xl mx-auto mb-4">
+              <Button variant="light" onClick={() => setCurrentView('dashboard')}>← Back to Dashboard</Button>
+            </div>
+            <TelemetryViewer />
           </div>
         )}
       </main>
