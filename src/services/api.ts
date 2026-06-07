@@ -1,13 +1,25 @@
 import { httpsCallable } from "firebase/functions";
 import { functions } from "./firebase";
+import { LevelConfig } from "../config/syllabus";
 
-export const evaluateLevel1 = async (userAnswer: Record<string, "Fact" | "Dimension">) => {
+export const generateTutoringHint = async (levelConfig: LevelConfig, userAnswer: Record<string, string>, conceptFailed: string) => {
   try {
-    const evaluateResponse = httpsCallable(functions, "evaluate_response");
-    const result = await evaluateResponse({ user_answer: userAnswer });
-    return result.data as { is_correct: boolean; error_type: string | null; concept_failed: string | null };
+    const generateHint = httpsCallable(functions, "generate_tutoring_hint");
+    const result = await generateHint({ level_config: levelConfig, user_answer: userAnswer, concept_failed: conceptFailed });
+    return result.data as { hint: string };
   } catch (error) {
-    console.error("Error calling evaluate_response function", error);
+    console.error("Error calling generate_tutoring_hint function", error);
+    throw error;
+  }
+};
+
+export const generateRemedialLevel = async (levelConfig: LevelConfig, conceptFailed: string) => {
+  try {
+    const generateLevel = httpsCallable(functions, "generate_remedial_level");
+    const result = await generateLevel({ level_config: levelConfig, concept_failed: conceptFailed });
+    return result.data as { level: LevelConfig };
+  } catch (error) {
+    console.error("Error calling generate_remedial_level function", error);
     throw error;
   }
 };
