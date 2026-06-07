@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, CardBody, CardHeader, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@nextui-org/react";
+import { Card, CardBody, CardHeader, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Progress } from "@nextui-org/react";
 import { getTelemetryData, TelemetryFailure } from '../../services/db';
 
 export default function TelemetryViewer() {

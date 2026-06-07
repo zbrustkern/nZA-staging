@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "./firebase";
 
 export interface UserProgress {

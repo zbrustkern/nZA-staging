@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2026-06-07
+
+### Fixed
+- **TypeScript Build Error**: Resolved a strict compilation error caught in the CI/CD pipeline caused by a missing \`Progress\` import and an unused \`updateDoc\` variable. 
+- **DevOps**: Installed \`husky\` to enforce a pre-commit hook that automatically runs \`npm run build\` locally, preventing CI/CD failures from being pushed to production.
+
 ## [0.9.1] - 2026-06-07
 
 ### Fixed
