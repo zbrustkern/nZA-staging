@@ -2,16 +2,25 @@ import { useState, DragEvent, useEffect, useRef } from 'react';
 import { Card, CardBody, CardHeader, Button, Divider, Spinner, Progress } from "@nextui-org/react";
 import { generateTutoringHint, generateRemedialLevel, generateRemedialUnit } from '../../services/api';
 import { syncUserProgress, getUserProgress, logTelemetryFailure } from '../../services/db';
-import { UNIT_1_DIMENSIONAL_BASICS, Unit, Lesson, ConceptCategory } from '../../config/syllabus';
+import { DATA_ENG_TRACK, Unit, Lesson, ConceptCategory } from '../../config/syllabus';
 import { CheckCircle2 } from 'lucide-react';
 
-export default function UnitViewer() {
-  const [unit, setUnit] = useState<Unit>(UNIT_1_DIMENSIONAL_BASICS);
+interface UnitViewerProps {
+  unitId: string;
+  onReturnToDashboard: () => void;
+}
+
+export default function UnitViewer({ unitId, onReturnToDashboard }: UnitViewerProps) {
+  // Find the exact unit from syllabus
+  const targetUnit = DATA_ENG_TRACK.courses.flatMap(c => c.units).find(u => u.id === unitId)!;
+
+  const [unit, setUnit] = useState<Unit>(targetUnit);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   
   // Tracking Multi-Tiered Evaluation
   const [totalUnitFailures, setTotalUnitFailures] = useState(0);
   const [currentLessonFailures, setCurrentLessonFailures] = useState(0);
+  const [completedUnitIds, setCompletedUnitIds] = useState<string[]>([]);
   
   const [isHydrating, setIsHydrating] = useState(true);
 
@@ -19,16 +28,23 @@ export default function UnitViewer() {
   useEffect(() => {
     const hydrate = async () => {
       const progress = await getUserProgress();
-      if (progress && progress.currentUnitId === unit.id) {
-        // Restore progress if it matches the current unit
-        setCurrentLessonIndex(progress.currentLessonIndex);
-        setTotalUnitFailures(progress.totalUnitFailures);
-        setCurrentLessonFailures(progress.currentLessonFailures);
+      if (progress) {
+        if (progress.completedUnitIds) {
+          setCompletedUnitIds(progress.completedUnitIds);
+        }
+        if (progress.currentUnitId === unit.id) {
+          setCurrentLessonIndex(progress.currentLessonIndex);
+          setTotalUnitFailures(progress.totalUnitFailures);
+          setCurrentLessonFailures(progress.currentLessonFailures);
+        }
       }
       setIsHydrating(false);
     };
     hydrate();
   }, [unit.id]);
+
+  const currentLesson: Lesson = unit.lessons[currentLessonIndex];
+  const isUnitComplete = currentLessonIndex >= unit.lessons.length;
 
   // Sync to Firestore on state change
   const initialMount = useRef(true);
@@ -39,16 +55,21 @@ export default function UnitViewer() {
         return;
     }
     
+    // If unit is complete, ensure we add it to completedUnitIds
+    let updatedCompletedIds = [...completedUnitIds];
+    if (isUnitComplete && !updatedCompletedIds.includes(unit.id)) {
+      updatedCompletedIds.push(unit.id);
+      setCompletedUnitIds(updatedCompletedIds);
+    }
+    
     syncUserProgress({
       currentUnitId: unit.id,
       currentLessonIndex,
       totalUnitFailures,
-      currentLessonFailures
+      currentLessonFailures,
+      completedUnitIds: updatedCompletedIds
     });
-  }, [currentLessonIndex, totalUnitFailures, currentLessonFailures, isHydrating, unit.id]);
-
-  const currentLesson: Lesson = unit.lessons[currentLessonIndex];
-  const isUnitComplete = currentLessonIndex >= unit.lessons.length;
+  }, [currentLessonIndex, totalUnitFailures, currentLessonFailures, isHydrating, unit.id, isUnitComplete]);
 
   const [answers, setAnswers] = useState<Record<string, ConceptCategory>>({});
   const [loadingHint, setLoadingHint] = useState(false);
@@ -73,9 +94,7 @@ export default function UnitViewer() {
         <h2 className="text-4xl font-bold text-slate-800">Unit Complete!</h2>
         <p className="text-xl text-slate-600">You have successfully mastered {unit.title} with {totalUnitFailures} total mistakes.</p>
         <div className="mt-8">
-          <Button color="primary" size="lg" onClick={() => {
-            window.location.reload();
-          }}>
+          <Button color="primary" size="lg" onClick={onReturnToDashboard}>
             Return to Dashboard
           </Button>
         </div>

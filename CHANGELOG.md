@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2026-06-07
+
+### Fixed
+- **Dashboard Unlock UX**: Fixed an issue where completing a unit caused a hard reload without unlocking subsequent units. The application now properly tracks \`completedUnitIds\` in Firestore and seamlessly unlocks the next chronological unit on the dashboard.
+- **Syllabus Expansion**: Added \`UNIT_2_ADVANCED_SCHEMAS\` to allow testing of the progression flow.
+
 ## [0.9.0] - 2026-06-07
 
 ### Added

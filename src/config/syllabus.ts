@@ -109,11 +109,47 @@ export const UNIT_1_DIMENSIONAL_BASICS: Unit = {
   lessons: [LESSON_1_CORE, LESSON_2_KEYS]
 };
 
+export const LESSON_3_STAR_SCHEMA: Lesson = {
+  id: "lesson_3_star_schema",
+  title: "The Star Schema",
+  description: "Understand how Fact and Dimension tables relate.",
+  lessonHtml: `
+    <div class="prose prose-blue max-w-none mb-6">
+      <h3 class="text-xl font-semibold mb-2">The Star Schema Architecture</h3>
+      <p class="mb-4">In a dimensional model, tables are arranged in a <strong>Star Schema</strong>. A central Fact table is surrounded by Dimension tables, resembling a star.</p>
+      <ul class="list-disc pl-5 mb-4 text-left">
+        <li class="mb-2"><strong>Fact Table:</strong> Resides at the center, containing massive amounts of transactional data.</li>
+        <li class="mb-2"><strong>Dimension Tables:</strong> Radiate outward, providing context and descriptive attributes.</li>
+      </ul>
+      <p>This design is optimized for fast query performance in analytics.</p>
+    </div>
+  `,
+  exercise: {
+    uiType: "drag_and_drop",
+    passingThreshold: 1.0,
+    categories: ["Fact Table Characteristic", "Dimension Table Characteristic"],
+    concepts: [
+      { id: "c1", name: "Highly Normalized", category: "Fact Table Characteristic" },
+      { id: "c2", name: "Contains Foreign Keys", category: "Fact Table Characteristic" },
+      { id: "c3", name: "Highly Denormalized", category: "Dimension Table Characteristic" },
+      { id: "c4", name: "Contains Primary Keys", category: "Dimension Table Characteristic" },
+      { id: "c5", name: "Millions of Rows", category: "Fact Table Characteristic" }
+    ]
+  }
+};
+
+export const UNIT_2_ADVANCED_SCHEMAS: Unit = {
+  id: "unit_2_advanced_schemas",
+  title: "Advanced Schemas",
+  description: "Dive deeper into Star and Snowflake schemas.",
+  lessons: [LESSON_3_STAR_SCHEMA]
+};
+
 export const COURSE_1_MODELING: Course = {
   id: "course_1_modeling",
   title: "Dimensional Modeling",
   description: "Master the art of designing data warehouses.",
-  units: [UNIT_1_DIMENSIONAL_BASICS]
+  units: [UNIT_1_DIMENSIONAL_BASICS, UNIT_2_ADVANCED_SCHEMAS]
 };
 
 export const DATA_ENG_TRACK: Track = {

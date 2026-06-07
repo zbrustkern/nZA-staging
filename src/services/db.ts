@@ -6,6 +6,7 @@ export interface UserProgress {
   currentLessonIndex: number;
   totalUnitFailures: number;
   currentLessonFailures: number;
+  completedUnitIds?: string[];
 }
 
 // Persist or update user state
