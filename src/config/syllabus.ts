@@ -118,14 +118,14 @@ export const LESSON_3_STAR_SCHEMA: Lesson = {
       <h3 class="text-xl font-semibold mb-2">The Star Schema Architecture</h3>
       <p class="mb-4">In a dimensional model, tables are arranged in a <strong>Star Schema</strong>. A central Fact table is surrounded by Dimension tables, resembling a star.</p>
       <ul class="list-disc pl-5 mb-4 text-left">
-        <li class="mb-2"><strong>Fact Table:</strong> Resides at the center, containing massive amounts of transactional data.</li>
-        <li class="mb-2"><strong>Dimension Tables:</strong> Radiate outward, providing context and descriptive attributes.</li>
+        <li class="mb-2"><strong>Fact Table:</strong> Resides at the center and contains massive amounts of transactional data, often reaching <em>millions of rows</em>. It is <em>highly normalized</em> to ensure fast numerical aggregations, and it <em>contains foreign keys</em> that point outward to the dimension tables.</li>
+        <li class="mb-2"><strong>Dimension Tables:</strong> Radiate outward, providing context and descriptive attributes. They are often <em>highly denormalized</em> (flat) to avoid complex joins, and each <em>contains primary keys</em> that the fact table links to.</li>
       </ul>
       <p>This design is optimized for fast query performance in analytics.</p>
     </div>
   `,
   exercise: {
-    uiType: "drag_and_drop",
+    uiType: "multiple_choice",
     passingThreshold: 1.0,
     categories: ["Fact Table Characteristic", "Dimension Table Characteristic"],
     concepts: [

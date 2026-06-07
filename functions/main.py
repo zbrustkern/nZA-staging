@@ -17,6 +17,31 @@ def check_auth(req: https_fn.CallableRequest):
             message="User must be authenticated to use this feature."
         )
 
+def evaluate_lesson_json(client, lesson_text: str) -> tuple[bool, str]:
+    """Adversarial QA Agent to evaluate generated content."""
+    system_instruction = (
+        "You are a strict Data Engineering QA Agent. Evaluate the provided JSON lesson against these rules:\n"
+        "1. All concepts listed in the 'exercise' MUST be explicitly taught/mentioned in the 'lessonHtml' text.\n"
+        "2. Concept names MUST be completely unique. No duplicate strings across concepts.\n"
+        "Output ONLY valid JSON matching this schema: {\"passed\": boolean, \"critique\": \"If passed is false, explain why concisely.\"}"
+    )
+    
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=lesson_text,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                response_mime_type="application/json",
+                temperature=0.1
+            ),
+        )
+        res_json = json.loads(response.text)
+        return res_json.get("passed", False), res_json.get("critique", "")
+    except Exception as e:
+        print(f"QA Error: {e}")
+        return True, ""  # Fail open if QA agent crashes or returns bad JSON
+
 @https_fn.on_call(secrets=[gemini_api_key], region="us-central1")
 def generate_tutoring_hint(req: https_fn.CallableRequest) -> dict:
     check_auth(req)
@@ -69,7 +94,6 @@ def generate_tutoring_hint(req: https_fn.CallableRequest) -> dict:
             message="Failed to generate hint."
         )
 
-
 @https_fn.on_call(secrets=[gemini_api_key], region="us-central1")
 def generate_remedial_level(req: https_fn.CallableRequest) -> dict:
     check_auth(req)
@@ -86,32 +110,43 @@ def generate_remedial_level(req: https_fn.CallableRequest) -> dict:
     system_instruction = (
         "You are an expert curriculum designer. The user struggled with the concept "
         f"'{concept_failed}' in the context of dimensional modeling. "
-        "Generate a completely new, novel Level Configuration that teaches the SAME underlying concepts "
+        "Generate a completely new, novel Lesson Configuration that teaches the SAME underlying concepts "
         "but uses a completely different industry scenario (e.g. Airline booking, Hospital visits, Streaming service). "
-        "The response MUST be a valid JSON object matching the LevelConfig schema: "
-        "{'id': string, 'title': string, 'description': string, 'uiType': 'drag_and_drop', "
-        "'passingThreshold': 1.0, 'categories': ['Fact', 'Dimension'], "
-        "'concepts': [{'id': string, 'name': string, 'category': 'Fact' or 'Dimension'}]} "
+        "RULES:\n"
+        "1. All topics tested in the exercise MUST be explicitly defined in the `lessonHtml`.\n"
+        "2. Every concept name MUST be unique. No duplicate strings.\n"
+        "3. Randomly alternate between 'drag_and_drop' and 'multiple_choice' for 'uiType'.\n"
+        "The response MUST be a valid JSON object matching the Lesson schema: "
+        "{'id': string, 'title': string, 'description': string, 'lessonHtml': string, 'exercise': "
+        "{'uiType': 'drag_and_drop' | 'multiple_choice', 'passingThreshold': 1.0, 'categories': ['Fact', 'Dimension'], "
+        "'concepts': [{'id': string, 'name': string, 'category': 'Fact'}]}} "
         "Ensure there are exactly 5 concepts."
     )
 
     try:
         client = genai.Client(api_key=gemini_api_key.value)
         prompt = f"Original Level Config: {json.dumps(level_config)}"
-
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                response_mime_type="application/json",
-                temperature=0.8
-            ),
-        )
+        
+        max_attempts = 2
+        for attempt in range(max_attempts):
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    response_mime_type="application/json",
+                    temperature=0.8
+                ),
+            )
+            
+            passed, critique = evaluate_lesson_json(client, response.text)
+            if passed or attempt == max_attempts - 1:
+                break
+            else:
+                print(f"QA Failed on attempt {attempt+1}: {critique}")
+                prompt += f"\n\nYour previous attempt failed QA: {critique}\nPlease fix these errors."
 
         new_level = json.loads(response.text)
-        
-        # Ensure it has an id
         if "id" not in new_level:
             new_level["id"] = f"remedial_{level_config.get('id', 'level')}"
 
@@ -122,7 +157,6 @@ def generate_remedial_level(req: https_fn.CallableRequest) -> dict:
             code=https_fn.FunctionsErrorCode.INTERNAL, 
             message="Failed to generate remedial level."
         )
-
 
 @https_fn.on_call(secrets=[gemini_api_key], region="us-central1")
 def generate_remedial_unit(req: https_fn.CallableRequest) -> dict:
@@ -141,10 +175,14 @@ def generate_remedial_unit(req: https_fn.CallableRequest) -> dict:
         f"the unit '{unit.get('title')}'. They are missing the foundational concepts. "
         "Generate a macro-level review Lesson that synthesizes all the concepts taught in this unit, "
         "providing a broad overview to bridge the conceptual gaps. "
-        "The response MUST be a valid JSON object matching the Lesson schema (which contains an Exercise): "
+        "RULES:\n"
+        "1. All topics tested in the exercise MUST be explicitly defined in the `lessonHtml`.\n"
+        "2. Every concept name MUST be unique. No duplicate strings.\n"
+        "3. Randomly alternate between 'drag_and_drop' and 'multiple_choice' for 'uiType'.\n"
+        "The response MUST be a valid JSON object matching the Lesson schema: "
         "{'id': string, 'title': string, 'description': string, 'lessonHtml': string, 'exercise': "
-        "{'uiType': 'drag_and_drop', 'passingThreshold': 1.0, 'categories': ['Category1', 'Category2'], "
-        "'concepts': [{'id': string, 'name': string, 'category': 'Category1'}]}} "
+        "{'uiType': 'drag_and_drop' | 'multiple_choice', 'passingThreshold': 1.0, 'categories': ['Cat1', 'Cat2'], "
+        "'concepts': [{'id': string, 'name': string, 'category': 'Cat1'}]}} "
         "Ensure the HTML lesson is highly encouraging and explains the big picture."
     )
 
@@ -152,19 +190,26 @@ def generate_remedial_unit(req: https_fn.CallableRequest) -> dict:
         client = genai.Client(api_key=gemini_api_key.value)
         prompt = f"Failed Unit Configuration: {json.dumps(unit)}"
 
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                response_mime_type="application/json",
-                temperature=0.8
-            ),
-        )
+        max_attempts = 2
+        for attempt in range(max_attempts):
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    response_mime_type="application/json",
+                    temperature=0.8
+                ),
+            )
+            
+            passed, critique = evaluate_lesson_json(client, response.text)
+            if passed or attempt == max_attempts - 1:
+                break
+            else:
+                print(f"QA Failed on attempt {attempt+1}: {critique}")
+                prompt += f"\n\nYour previous attempt failed QA: {critique}\nPlease fix these errors."
 
         new_lesson = json.loads(response.text)
-        
-        # Ensure it has an id
         if "id" not in new_lesson:
             new_lesson["id"] = f"remedial_unit_{unit.get('id', 'unit')}"
 

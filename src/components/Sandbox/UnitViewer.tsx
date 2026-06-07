@@ -116,6 +116,10 @@ export default function UnitViewer({ unitId, onReturnToDashboard }: UnitViewerPr
     }
   };
 
+  const handleSelectCategory = (conceptId: string, category: ConceptCategory) => {
+    setAnswers(prev => ({ ...prev, [conceptId]: category }));
+  };
+
   const handleDragStart = (e: DragEvent<HTMLDivElement>, item: string) => {
     e.dataTransfer.setData("text/plain", item);
   };
@@ -154,28 +158,24 @@ export default function UnitViewer({ unitId, onReturnToDashboard }: UnitViewerPr
       return;
     }
 
-    // Determine deterministic AI trigger based on failure counts
     const newLessonFailures = currentLessonFailures + 1;
     const newTotalUnitFailures = totalUnitFailures + 1;
     
     setCurrentLessonFailures(newLessonFailures);
     setTotalUnitFailures(newTotalUnitFailures);
     
-    // Log telemetry immediately
     logTelemetryFailure(failedConceptId!, failedConceptName!, unit.id, currentLesson.id);
 
-    // THRESHOLD 3: Foundational Disconnect (Unit Level Remediation)
     if (newTotalUnitFailures >= 5) {
         setLoadingRemedial(true);
         try {
             const { lesson } = await generateRemedialUnit(unit);
-            // Replace the rest of the unit with the macro review
             const newUnit = { ...unit };
             newUnit.lessons.splice(currentLessonIndex + 1, newUnit.lessons.length - (currentLessonIndex + 1), lesson as any);
             setUnit(newUnit);
             setCurrentLessonIndex(currentLessonIndex + 1);
             setCurrentLessonFailures(0);
-            setTotalUnitFailures(0); // Reset to give them a fresh start on the macro review
+            setTotalUnitFailures(0);
         } catch (err) {
             console.error(err);
             alert("Error generating macro-level unit review.");
@@ -185,7 +185,6 @@ export default function UnitViewer({ unitId, onReturnToDashboard }: UnitViewerPr
         return;
     }
 
-    // THRESHOLD 2: Concept Blockage (Lesson Level Remediation)
     if (newLessonFailures >= 3) {
         setLoadingRemedial(true);
         try {
@@ -204,7 +203,6 @@ export default function UnitViewer({ unitId, onReturnToDashboard }: UnitViewerPr
         return;
     }
 
-    // THRESHOLD 1: Minor Misunderstanding (Exercise Level Hint)
     setLoadingHint(true);
     try {
       const { hint } = await generateTutoringHint(currentLesson as any, answers, failedConceptId!);
@@ -222,11 +220,9 @@ export default function UnitViewer({ unitId, onReturnToDashboard }: UnitViewerPr
     setLoadingRemedial(true);
     try {
       const { level } = await generateRemedialLevel(currentLesson as any, result.concept_failed);
-      
       const newUnit = { ...unit };
       newUnit.lessons.splice(currentLessonIndex + 1, 0, level as any);
       setUnit(newUnit);
-      
       setCurrentLessonIndex(currentLessonIndex + 1);
       setCurrentLessonFailures(0);
     } catch (err) {
@@ -239,14 +235,108 @@ export default function UnitViewer({ unitId, onReturnToDashboard }: UnitViewerPr
 
   const handleNextLesson = () => {
     setCurrentLessonIndex(prev => prev + 1);
-    setCurrentLessonFailures(0); // Reset failures on successful progression
+    setCurrentLessonFailures(0);
   };
 
-  const unassigned = currentLesson.exercise ? currentLesson.exercise.concepts.filter(c => !answers[c.id]) : [];
+  if (loadingRemedial) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-6 text-center animate-in fade-in zoom-in duration-500">
+        <Spinner size="lg" color="secondary" />
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Writing a Fresh Lesson...</h2>
+          <p className="text-gray-500 max-w-md mx-auto mt-2 text-lg">I noticed you're struggling with this concept. I'm building a brand new, custom scenario for you from scratch in real-time. Hang tight!</p>
+        </div>
+      </div>
+    );
+  }
+
+  const renderExerciseUI = () => {
+    const exercise = currentLesson.exercise;
+    if (!exercise) return null;
+
+    if (exercise.uiType === "multiple_choice") {
+      return (
+        <div className="flex flex-col gap-4 w-full">
+          {exercise.concepts.map((concept) => (
+            <Card key={concept.id} className="w-full border-2 border-slate-100 shadow-sm">
+              <CardBody className="p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+                <span className="font-semibold text-lg text-slate-700">{concept.name}</span>
+                <div className="flex gap-2 w-full md:w-auto">
+                  {exercise.categories.map((cat) => (
+                    <Button 
+                      key={cat} 
+                      color={answers[concept.id] === cat ? "secondary" : "default"}
+                      variant={answers[concept.id] === cat ? "solid" : "flat"}
+                      onClick={() => handleSelectCategory(concept.id, cat)}
+                      className="flex-1 md:flex-none font-medium"
+                    >
+                      {cat}
+                    </Button>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+
+    // Default drag and drop
+    const unassigned = exercise.concepts.filter(c => !answers[c.id]);
+    
+    return (
+      <div className="flex flex-col gap-6 w-full">
+        <div className="flex justify-center gap-4 flex-wrap min-h-[50px]">
+          {unassigned.map(concept => (
+            <div
+              key={concept.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, concept.id)}
+              className="px-5 py-3 bg-blue-100 text-blue-900 font-medium rounded-xl shadow-sm cursor-grab active:cursor-grabbing hover:bg-blue-200 transition-all"
+            >
+              {concept.name}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {exercise.categories.map(category => {
+            const categorizedConcepts = exercise.concepts.filter(c => answers[c.id] === category);
+            return (
+              <Card key={category} className="w-full border-none shadow-md">
+                <CardHeader className="font-bold text-xl justify-center py-4 bg-purple-100 text-purple-900">
+                  {category}
+                </CardHeader>
+                <Divider/>
+                <CardBody 
+                  className="min-h-[250px] flex flex-col items-center gap-3 bg-slate-50 p-6"
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, category)}
+                >
+                  {categorizedConcepts.length === 0 && <span className="text-slate-400 mt-8 text-lg border-2 border-dashed border-slate-300 rounded-xl p-8 w-full text-center">Drag items here</span>}
+                  {categorizedConcepts.map(concept => (
+                    <div 
+                      key={concept.id} 
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, concept.id)}
+                      className="px-5 py-3 border-2 rounded-xl w-full text-center font-medium shadow-sm cursor-grab bg-purple-50 border-purple-200 text-purple-800 transition-all"
+                    >
+                      {concept.name}
+                    </div>
+                  ))}
+                </CardBody>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const progressValue = ((currentLessonIndex) / unit.lessons.length) * 100;
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full mt-4 mb-16">
+    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full mt-4 mb-16 animate-in fade-in duration-500">
       
       <div className="mb-4">
         <div className="flex justify-between text-sm text-gray-500 mb-2 font-medium">
@@ -264,7 +354,7 @@ export default function UnitViewer({ unitId, onReturnToDashboard }: UnitViewerPr
         <Card className="bg-white border border-slate-200 shadow-sm mb-4">
           <CardBody className="p-8">
             <div 
-              className="text-slate-700 leading-relaxed text-left text-lg"
+              className="text-slate-700 leading-relaxed text-left text-lg prose max-w-none"
               dangerouslySetInnerHTML={{ __html: currentLesson.lessonHtml }} 
             />
           </CardBody>
@@ -272,52 +362,15 @@ export default function UnitViewer({ unitId, onReturnToDashboard }: UnitViewerPr
       )}
 
       {currentLesson.exercise && (
-        <div className="animate-in fade-in duration-700 mt-4">
-          <div className="flex justify-center gap-4 flex-wrap mb-6 min-h-[50px]">
-            {unassigned.map(concept => (
-              <div
-                key={concept.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, concept.id)}
-                className="px-5 py-3 bg-blue-100 text-blue-900 font-medium rounded-xl shadow-sm cursor-grab active:cursor-grabbing hover:bg-blue-200 hover:shadow-md transition-all"
-              >
-                {concept.name}
-              </div>
-            ))}
+        <div className="mt-4 flex flex-col gap-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-slate-800">Knowledge Check</h3>
+            <span className={`text-sm px-3 py-1 rounded-full font-medium ${currentLesson.exercise.uiType === 'multiple_choice' ? 'bg-secondary-100 text-secondary-800' : 'bg-blue-100 text-blue-800'}`}>
+              {currentLesson.exercise.uiType === 'multiple_choice' ? 'Multiple Choice' : 'Drag & Drop'}
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {currentLesson.exercise.categories.map(category => {
-              const categorizedConcepts = currentLesson.exercise!.concepts.filter(c => answers[c.id] === category);
-              return (
-                <Card key={category} className="w-full border-none shadow-md">
-                  <CardHeader className={`font-bold text-xl justify-center py-4 ${category === 'Fact' || category === 'Surrogate Key' ? 'bg-orange-100 text-orange-900' : 'bg-purple-100 text-purple-900'}`}>
-                    {category}s
-                  </CardHeader>
-                  <Divider/>
-                  <CardBody 
-                    className="min-h-[300px] flex flex-col items-center gap-3 bg-slate-50 p-6"
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, category)}
-                  >
-                    {categorizedConcepts.length === 0 && <span className="text-slate-400 mt-8 text-lg border-2 border-dashed border-slate-300 rounded-xl p-8 w-full text-center">Drag & Drop {category}s here</span>}
-                    {categorizedConcepts.map(concept => (
-                      <div 
-                        key={concept.id} 
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, concept.id)}
-                        className={`px-5 py-3 border-2 rounded-xl w-full text-center font-medium shadow-sm cursor-grab transition-all ${
-                          category === 'Fact' || category === 'Surrogate Key' ? 'bg-orange-50 border-orange-200 text-orange-800 hover:border-orange-400' : 'bg-purple-50 border-purple-200 text-purple-800 hover:border-purple-400'
-                        }`}
-                      >
-                        {concept.name}
-                      </div>
-                    ))}
-                  </CardBody>
-                </Card>
-              );
-            })}
-          </div>
+          {renderExerciseUI()}
 
           <div className="flex justify-center mt-8">
             <Button 

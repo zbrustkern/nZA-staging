@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-06-07
+
+### Added
+- **Adversarial QA Pipeline**: Generative functions (\`generate_remedial_level\` and \`generate_remedial_unit\`) now utilize an internal self-evaluating QA loop before serving AI content. The QA agent aggressively enforces content/test parity, exact-match naming uniqueness, and randomized exercise styles.
+- **Multiple Choice Exercises**: Introduced a new pedagogical testing format: \`multiple_choice\`. The frontend will automatically route the UI rendering based on the data schema.
+- **Graceful Loading UX**: Overhauled the frontend loading states to directly communicate to the user when a completely new bespoke lesson is being generated.
+
+### Fixed
+- **Curriculum Alignment**: Rewrote \`UNIT_2_ADVANCED_SCHEMAS\` lesson text to comprehensively define Highly Normalized vs Denormalized datasets, fixing a previously disjointed exercise.
+
 ## [0.9.3] - 2026-06-07
 
 ### Fixed
