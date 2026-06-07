@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-06-07
+
+### Added
+- **Multi-Tiered Evaluation**: Built multi-level state tracking (Exercise vs Unit) to record student failures over time.
+- **Hierarchical AI Intervention**:
+  - *Exercise Failure (1 fail)*: Triggers Socratic hint generation.
+  - *Lesson Failure (3 fails)*: Triggers generation of a completely novel remedial lesson.
+  - *Unit Failure (5 cumulative fails)*: Triggers generation of a macro-level unit review lesson.
+- **Backend Remediation Endpoint**: Implemented `generate_remedial_unit` Cloud Function to handle unit-level pedagogical breakdowns.
+
 ## [0.7.0] - 2026-06-07
 
 ### Added

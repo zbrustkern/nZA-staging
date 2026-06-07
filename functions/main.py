@@ -122,3 +122,56 @@ def generate_remedial_level(req: https_fn.CallableRequest) -> dict:
             code=https_fn.FunctionsErrorCode.INTERNAL, 
             message="Failed to generate remedial level."
         )
+
+
+@https_fn.on_call(secrets=[gemini_api_key], region="us-central1")
+def generate_remedial_unit(req: https_fn.CallableRequest) -> dict:
+    check_auth(req)
+    data = req.data
+    unit = data.get("unit")
+
+    if not unit:
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INVALID_ARGUMENT, 
+            message="Missing required field: unit."
+        )
+
+    system_instruction = (
+        "You are an expert curriculum designer. The user has consistently failed multiple exercises across "
+        f"the unit '{unit.get('title')}'. They are missing the foundational concepts. "
+        "Generate a macro-level review Lesson that synthesizes all the concepts taught in this unit, "
+        "providing a broad overview to bridge the conceptual gaps. "
+        "The response MUST be a valid JSON object matching the Lesson schema (which contains an Exercise): "
+        "{'id': string, 'title': string, 'description': string, 'lessonHtml': string, 'exercise': "
+        "{'uiType': 'drag_and_drop', 'passingThreshold': 1.0, 'categories': ['Category1', 'Category2'], "
+        "'concepts': [{'id': string, 'name': string, 'category': 'Category1'}]}} "
+        "Ensure the HTML lesson is highly encouraging and explains the big picture."
+    )
+
+    try:
+        client = genai.Client(api_key=gemini_api_key.value)
+        prompt = f"Failed Unit Configuration: {json.dumps(unit)}"
+
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                response_mime_type="application/json",
+                temperature=0.8
+            ),
+        )
+
+        new_lesson = json.loads(response.text)
+        
+        # Ensure it has an id
+        if "id" not in new_lesson:
+            new_lesson["id"] = f"remedial_unit_{unit.get('id', 'unit')}"
+
+        return {"lesson": new_lesson}
+    except Exception as e:
+        print(f"Error generating remedial unit review: {e}")
+        raise https_fn.HttpsError(
+            code=https_fn.FunctionsErrorCode.INTERNAL, 
+            message="Failed to generate remedial unit review."
+        )

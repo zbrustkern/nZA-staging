@@ -1,12 +1,16 @@
 import { useState, DragEvent, useEffect } from 'react';
 import { Card, CardBody, CardHeader, Button, Divider, Spinner, Progress } from "@nextui-org/react";
-import { generateTutoringHint, generateRemedialLevel } from '../../services/api';
+import { generateTutoringHint, generateRemedialLevel, generateRemedialUnit } from '../../services/api';
 import { UNIT_1_DIMENSIONAL_BASICS, Unit, Lesson, ConceptCategory } from '../../config/syllabus';
 import { CheckCircle2 } from 'lucide-react';
 
 export default function UnitViewer() {
   const [unit, setUnit] = useState<Unit>(UNIT_1_DIMENSIONAL_BASICS);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
+  
+  // Tracking Multi-Tiered Evaluation
+  const [totalUnitFailures, setTotalUnitFailures] = useState(0);
+  const [currentLessonFailures, setCurrentLessonFailures] = useState(0);
   
   const currentLesson: Lesson = unit.lessons[currentLessonIndex];
   const isUnitComplete = currentLessonIndex >= unit.lessons.length;
@@ -19,7 +23,8 @@ export default function UnitViewer() {
   useEffect(() => {
     setAnswers({});
     setResult(null);
-  }, [currentLessonIndex, unit]);
+    setCurrentLessonFailures(0); // Reset lesson failures on new lesson
+  }, [currentLessonIndex, unit.id]);
 
   if (isUnitComplete) {
     return (
@@ -28,7 +33,7 @@ export default function UnitViewer() {
           <CheckCircle2 size={80} />
         </div>
         <h2 className="text-4xl font-bold text-slate-800">Unit Complete!</h2>
-        <p className="text-xl text-slate-600">You have successfully mastered {unit.title}.</p>
+        <p className="text-xl text-slate-600">You have successfully mastered {unit.title} with {totalUnitFailures} total mistakes.</p>
         <div className="mt-8">
           <Button color="primary" size="lg" onClick={() => {
             window.location.reload();
@@ -86,9 +91,54 @@ export default function UnitViewer() {
       return;
     }
 
+    // Determine deterministic AI trigger based on failure counts
+    const newLessonFailures = currentLessonFailures + 1;
+    const newTotalUnitFailures = totalUnitFailures + 1;
+    
+    setCurrentLessonFailures(newLessonFailures);
+    setTotalUnitFailures(newTotalUnitFailures);
+
+    // THRESHOLD 3: Foundational Disconnect (Unit Level Remediation)
+    if (newTotalUnitFailures >= 5) {
+        setLoadingRemedial(true);
+        try {
+            const { lesson } = await generateRemedialUnit(unit);
+            // Replace the rest of the unit with the macro review
+            const newUnit = { ...unit };
+            newUnit.lessons.splice(currentLessonIndex + 1, newUnit.lessons.length - (currentLessonIndex + 1), lesson as any);
+            setUnit(newUnit);
+            setCurrentLessonIndex(currentLessonIndex + 1);
+            setTotalUnitFailures(0); // Reset to give them a fresh start on the macro review
+        } catch (err) {
+            console.error(err);
+            alert("Error generating macro-level unit review.");
+        } finally {
+            setLoadingRemedial(false);
+        }
+        return;
+    }
+
+    // THRESHOLD 2: Concept Blockage (Lesson Level Remediation)
+    if (newLessonFailures >= 3) {
+        setLoadingRemedial(true);
+        try {
+            const { level } = await generateRemedialLevel(currentLesson as any, failedConceptName || "Concept");
+            const newUnit = { ...unit };
+            newUnit.lessons.splice(currentLessonIndex + 1, 0, level as any);
+            setUnit(newUnit);
+            setCurrentLessonIndex(currentLessonIndex + 1);
+        } catch (err) {
+            console.error(err);
+            alert("Error generating remedial lesson.");
+        } finally {
+            setLoadingRemedial(false);
+        }
+        return;
+    }
+
+    // THRESHOLD 1: Minor Misunderstanding (Exercise Level Hint)
     setLoadingHint(true);
     try {
-      // Pass the full lesson payload to backend to maintain schema compatibility
       const { hint } = await generateTutoringHint(currentLesson as any, answers, failedConceptId!);
       setResult({ is_correct: false, concept_failed: failedConceptName, hint });
     } catch (err) {
@@ -99,13 +149,12 @@ export default function UnitViewer() {
     }
   };
 
-  const handleRemedial = async () => {
+  const handleManualRemedial = async () => {
     if (!result?.concept_failed) return;
     setLoadingRemedial(true);
     try {
       const { level } = await generateRemedialLevel(currentLesson as any, result.concept_failed);
       
-      // Inject generated remedial lesson into the current unit right after current lesson
       const newUnit = { ...unit };
       newUnit.lessons.splice(currentLessonIndex + 1, 0, level as any);
       setUnit(newUnit);
@@ -208,7 +257,7 @@ export default function UnitViewer() {
               onClick={handleSubmit} 
               isDisabled={Object.keys(answers).length !== currentLesson.exercise.concepts.length || loadingHint || loadingRemedial}
             >
-              {loadingHint ? <Spinner color="white" size="sm" /> : "Submit Answer"}
+              {loadingHint || loadingRemedial ? <Spinner color="white" size="sm" /> : "Submit Answer"}
             </Button>
           </div>
         </div>
@@ -254,7 +303,7 @@ export default function UnitViewer() {
                     variant="flat"
                     size="lg" 
                     className="font-semibold"
-                    onClick={handleRemedial}
+                    onClick={handleManualRemedial}
                     isDisabled={loadingRemedial}
                   >
                     {loadingRemedial ? <Spinner color="secondary" size="sm" /> : "Try a New Scenario"}
