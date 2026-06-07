@@ -3,7 +3,7 @@ import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Card, CardBody 
 import { User } from 'firebase/auth';
 import { auth, signInWithGoogle, logout } from './services/firebase';
 import { Database, LogOut } from 'lucide-react';
-import Level1 from './components/Sandbox/Level1';
+import UnitViewer from './components/Sandbox/UnitViewer';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -68,14 +68,14 @@ export default function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card isPressable className="bg-white border-2 border-blue-100 shadow-sm hover:shadow-lg hover:border-blue-400 transition-all duration-300" onClick={() => setCurrentView('level1')}>
                 <CardBody className="p-6">
-                  <h3 className="text-xl font-bold text-blue-900 mb-2">Level 1: The Atomic Core</h3>
-                  <p className="text-gray-600">Learn to distinguish between Facts and Dimensions through an interactive drag-and-drop sandbox.</p>
+                  <h3 className="text-xl font-bold text-blue-900 mb-2">Unit 1: Dimensional Basics</h3>
+                  <p className="text-gray-600">Master the atomic core of data warehousing: Facts vs. Dimensions, and Surrogate vs. Natural Keys.</p>
                 </CardBody>
               </Card>
               <Card className="bg-gray-50 border border-gray-200 opacity-60">
                 <CardBody className="p-6">
-                  <h3 className="text-xl font-bold text-gray-500 mb-2">Level 2: Star Schema Basics</h3>
-                  <p className="text-gray-400">Locked. Complete Level 1 to unlock.</p>
+                  <h3 className="text-xl font-bold text-gray-500 mb-2">Unit 2: Advanced Schemas</h3>
+                  <p className="text-gray-400">Locked. Complete Unit 1 to unlock.</p>
                 </CardBody>
               </Card>
             </div>
@@ -85,7 +85,7 @@ export default function App() {
             <div className="max-w-4xl mx-auto mb-4">
               <Button variant="light" onClick={() => setCurrentView('dashboard')}>← Back to Dashboard</Button>
             </div>
-            <Level1 />
+            <UnitViewer />
           </div>
         )}
       </main>
