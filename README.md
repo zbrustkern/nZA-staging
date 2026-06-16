@@ -40,6 +40,18 @@ not Zeke Academy is built upon a **Scalable Learning Framework**, conceptually s
 
 ---
 
+## 📚 Curriculum Structure & Data Modeling
+
+not Zeke Academy is designed so that future content creators can easily build and scale courses. We moved away from flat arrays and built a strict hierarchical schema (defined in \`src/config/syllabus.ts\`) that mirrors real-world educational paradigms:
+
+1. **Track:** The highest level, representing a complete career path (e.g., *Data Engineering Track*). Contains an array of Courses.
+2. **Course:** A major sub-discipline within a Track (e.g., *Dimensional Modeling & Pipelines*). Contains an array of Units.
+3. **Unit:** A specific, logical grouping of related topics (e.g., *Unit 1: Dimensional Basics*). Contains an array of Lessons.
+4. **Lesson:** A specific pedagogical block. It contains the actual educational reading material (\`lessonHtml\`) and a single, interactive **Exercise**.
+5. **Exercise:** The interactive evaluation. It defines the \`uiType\` (e.g., Drag & Drop or Multiple Choice), passing thresholds, and an array of individual **Concepts** mapped to specific **Categories**.
+
+---
+
 ## 🚀 Getting Started
 
 1. Clone the repository and run `npm install`.
