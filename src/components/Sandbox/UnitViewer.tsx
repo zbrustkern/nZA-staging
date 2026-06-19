@@ -2,17 +2,18 @@ import { useState, DragEvent, useEffect, useRef } from 'react';
 import { Card, CardBody, CardHeader, Button, Divider, Spinner, Progress } from "@nextui-org/react";
 import { generateTutoringHint, generateRemedialLevel, generateRemedialUnit } from '../../services/api';
 import { syncUserProgress, getUserProgress, logTelemetryFailure } from '../../services/db';
-import { DATA_ENG_TRACK, Unit, Lesson, ConceptCategory } from '../../config/syllabus';
+import { Unit, Lesson, ConceptCategory, Track } from '../../config/syllabus';
 import { CheckCircle2 } from 'lucide-react';
 
 interface UnitViewerProps {
   unitId: string;
+  track: Track;
   onReturnToDashboard: () => void;
 }
 
-export default function UnitViewer({ unitId, onReturnToDashboard }: UnitViewerProps) {
+export default function UnitViewer({ unitId, track, onReturnToDashboard }: UnitViewerProps) {
   // Find the exact unit from syllabus
-  const targetUnit = DATA_ENG_TRACK.courses.flatMap(c => c.units).find(u => u.id === unitId)!;
+  const targetUnit = track.courses.flatMap(c => c.units).find(u => u.id === unitId)!;
 
   const [unit, setUnit] = useState<Unit>(targetUnit);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);

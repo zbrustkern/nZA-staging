@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-06-19
+
+### Added
+- **Multi-Track Support**: Re-engineered the curriculum data layer to support infinite parallel Tracks. Added a top-level tab selector to the Dashboard UI to switch contexts.
+- **Security Engineering Track**: Launched a massive 12-lesson secondary track explicitly built for Security Engineering interview prep.
+  - *Unit 1*: AuthN vs AuthZ, IDOR & UUIDs, Session Hijacking
+  - *Unit 2*: SQL Injection, Stored/Reflected XSS, CSRF
+  - *Unit 3*: Hashing vs Encryption, Salting, Defense in Depth
+  - *Unit 4*: TLS Handshakes, Mutual TLS (mTLS), Zero Trust Architecture
+- **Documentation**: Embedded the live Firebase hosting link into the README.
+
 ## [1.0.0] - 2026-06-07
 
 ### Added

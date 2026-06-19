@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Card, CardBody } from "@nextui-org/react";
+import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button, Card, CardBody, Tabs, Tab } from "@nextui-org/react";
 import { User } from 'firebase/auth';
 import { auth, signInWithGoogle, logout } from './services/firebase';
-import { Database, LogOut, BarChart3 } from 'lucide-react';
+import { Database, LogOut, BarChart3, ShieldCheck } from 'lucide-react';
 import UnitViewer from './components/Sandbox/UnitViewer';
 import TelemetryViewer from './components/Dashboard/TelemetryViewer';
 import { DATA_ENG_TRACK } from './config/syllabus';
+import { SECURITY_ENG_TRACK } from './config/security_syllabus';
 import { getUserProgress } from './services/db';
+
+const TRACKS = [DATA_ENG_TRACK, SECURITY_ENG_TRACK];
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'dashboard' | 'level1' | 'telemetry'>('dashboard');
-  const [activeUnitId, setActiveUnitId] = useState<string>(DATA_ENG_TRACK.courses[0].units[0].id);
+  const [activeTrackId, setActiveTrackId] = useState<string>(SECURITY_ENG_TRACK.id);
+  const [activeUnitId, setActiveUnitId] = useState<string>('');
   const [completedUnitIds, setCompletedUnitIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -43,7 +47,7 @@ export default function App() {
               <Database size={48} />
             </div>
             <h1 className="text-3xl font-bold text-center">notZekeAcademy</h1>
-            <p className="text-center text-gray-500">Master dimensional modeling with AI-driven interactive lessons.</p>
+            <p className="text-center text-gray-500">Master engineering with AI-driven interactive lessons.</p>
             <Button color="primary" size="lg" className="w-full font-bold text-lg mt-4 shadow-md" onClick={signInWithGoogle}>
               Sign In with Google
             </Button>
@@ -62,8 +66,9 @@ export default function App() {
     setCurrentView('dashboard');
   };
 
-  let activeUnit = DATA_ENG_TRACK.courses.flatMap(c => c.units).find(u => u.id === activeUnitId);
-  if (!activeUnit) activeUnit = DATA_ENG_TRACK.courses[0].units[0];
+  const activeTrack = TRACKS.find(t => t.id === activeTrackId) || TRACKS[0];
+  let activeUnit = activeTrack.courses.flatMap(c => c.units).find(u => u.id === activeUnitId);
+  if (!activeUnit) activeUnit = activeTrack.courses[0].units[0];
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -88,12 +93,41 @@ export default function App() {
       <main className="flex-grow p-6">
         {currentView === 'dashboard' && (
           <div className="max-w-4xl mx-auto flex flex-col gap-10 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            <div className="flex flex-col gap-4">
+              <Tabs 
+                selectedKey={activeTrackId} 
+                onSelectionChange={(key) => setActiveTrackId(key as string)}
+                color="primary"
+                variant="underlined"
+                size="lg"
+                classNames={{
+                  tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+                  cursor: "w-full bg-blue-600",
+                  tab: "max-w-fit px-0 h-12",
+                  tabContent: "group-data-[selected=true]:text-blue-600 font-semibold"
+                }}
+              >
+                {TRACKS.map((track) => (
+                  <Tab 
+                    key={track.id} 
+                    title={
+                      <div className="flex items-center space-x-2">
+                        {track.id === 'track_security_eng' ? <ShieldCheck size={20} /> : <Database size={20} />}
+                        <span>{track.title}</span>
+                      </div>
+                    } 
+                  />
+                ))}
+              </Tabs>
+            </div>
+
             <div>
-              <h2 className="text-3xl font-bold mb-2">Your Skill Tree: {DATA_ENG_TRACK.title}</h2>
-              <p className="text-gray-500 text-lg">{DATA_ENG_TRACK.description}</p>
+              <h2 className="text-3xl font-bold mb-2">{activeTrack.title}</h2>
+              <p className="text-gray-500 text-lg">{activeTrack.description}</p>
             </div>
             
-            {DATA_ENG_TRACK.courses.map((course) => (
+            {activeTrack.courses.map((course) => (
               <div key={course.id} className="flex flex-col gap-4">
                 <div className="border-b border-gray-200 pb-2">
                   <h3 className="text-2xl font-semibold text-slate-800">{course.title}</h3>
@@ -135,7 +169,7 @@ export default function App() {
             <div className="max-w-4xl mx-auto mb-4">
               <Button variant="light" onClick={handleReturnToDashboard}>← Back to Dashboard</Button>
             </div>
-            <UnitViewer unitId={activeUnit.id} onReturnToDashboard={handleReturnToDashboard} />
+            <UnitViewer unitId={activeUnit.id} track={activeTrack} onReturnToDashboard={handleReturnToDashboard} />
           </div>
         )}
 

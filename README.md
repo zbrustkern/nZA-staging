@@ -4,6 +4,8 @@ Welcome to **not Zeke Academy**, a dynamic, AI-powered learning platform designe
 
 Through dynamic, GenAI-powered lesson building and learner-aware reactive pedagogy, not Zeke Academy breaks away from the static, rigid constraints of traditional e-learning.
 
+**Live Demo:** [https://snipit-46a75.web.app/](https://snipit-46a75.web.app/)
+
 ---
 
 ## 🎯 Purpose and Goals
